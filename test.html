@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Markdown Note</title>
+    <style>
+        :root {
+            --formField_width: 300px;
+            --form_width: 400px;
+            --noteType_IconWidth: 40px;
+            --noteType_IconHeight: 40px;
+        }
+
+        body {
+            font-family: "SF Pro Text", Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .form-container {
+            width: var(--form_width);
+            margin: 0 auto;
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .form-row {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 5px;
+            font-size: 10pt;
+            color: #555;
+        }
+
+        #template-search-container {
+            position: relative;
+        }
+
+        #field-group {
+            display: block;
+            margin-block: 0 !important;
+            padding: 0 !important;
+        }
+
+        #note-category {
+            display: block;
+            color: gray;
+            /*font-style: italic;*/
+            height: 18px;
+            line-height: 18px;
+            margin-bottom: 5px;
+            margin-right: 15px;
+            text-align: right;
+            font-size: 10pt;
+            font-weight: 600;
+        }
+
+        #template-search {
+            width: calc(100%);
+            padding: 5px;
+            font-size: 10pt;
+            font-weight: 600;
+        }
+
+        #template-search-dropdown {
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            width: 300px;
+            z-index: 1000;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f1f1;
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item:hover,
+        .dropdown-item.active {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        .dropdown-item img {
+            width: 24px;
+            height: 24px;
+            margin-right: 10px;
+        }
+
+        .dropdown-item .note-type {
+            flex-grow: 1;
+            font-weight: bold;
+        }
+
+        .dropdown-item .note-category {
+            color: gray;
+            text-align: right;
+        }
+
+        #selected-template {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0px;
+        }
+
+        #selected-template img {
+            width: var(--noteType_IconWidth);
+            height: var(--noteType_IconHeight);
+            margin-right: 15px;
+        }
+
+        #buttons {
+            text-align: right;
+            padding-right: 20px;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin-left: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #cancel-btn {
+            background-color: #f44336;
+            color: #fff;
+        }
+
+        #create-btn {
+            background-color: #4CAF50;
+            color: #fff;
+        }
+
+        #create-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        div.icon_spacer {
+            width: var(--noteType_IconWidth);
+            height: 0px;
+            margin-right: 15px;
+            display: inline-block;
+            /*outline: 1px solid red;*/
+        }
+
+        div.field-group {
+            display: flex;
+            align-items: center;
+            height: var(--noteType_IconHeight);
+        }
+
+        div.form-field {
+            width: var(--formField_width);
+        }
+
+        input {
+            width: calc(100%);
+            padding: 5px;
+        }
+
+        input#note-title {
+            padding: 5px !important;
+        }
+
+        div.form-title {
+            font-size: 16pt;
+            font-weight: bold;
+            padding-bottom: 15px;
+        }
+
+        div.form-fields {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="form-container">
+        <div class="form-title">Create Note</div>
+        <div class="form-fields">
+            <div id="selected-template">
+                <img id="template-icon" src="icons/no-template-selected.png" alt="Template Icon">
+                <div class="form-field">
+                    <input type="text" id="note-title" placeholder="Title…" style="width: 100%; padding: 10px;">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="field-group">
+                    <div>
+                        <div class="icon_spacer"></div>
+                        <div id="note-category"></div> <!-- Note category appears here -->
+                        <div class="icon_spacer"></div>
+                    </div>
+                    <div class="template-search-container form-field">
+                        <!-- <label for="template-search" class="form-label">Note type</label> -->
+                        <div id="template-search-container">
+                            <input type="text" id="template-search" placeholder="Type…">
+                            <div id="template-search-dropdown" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div id="buttons">
+                <button id="cancel-btn">Cancel</button>
+                <button id="create-btn" disabled>Create</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const templates = [
+            { noteCategory: 'howto', noteType: 'App', icon: 'icons/howto/app.png' },
+            { noteCategory: 'code', noteType: 'JavaScript', icon: 'icons/code/javascript.png' },
+            { noteCategory: 'code', noteType: 'Python', icon: 'icons/code/python.png' },
+            { noteCategory: 'code', noteType: 'Swift', icon: 'icons/code/swift.png' },
+        ];
+
+        // DOM Elements
+        const templateSearchInput = document.getElementById('template-search');
+        const templateDropdown = document.getElementById('template-search-dropdown');
+        const selectedTemplateSection = document.getElementById('selected-template');
+        const templateIcon = document.getElementById('template-icon');
+        const noteTitleInput = document.getElementById('note-title');
+        const noteCategoryDisplay = document.getElementById('note-category');
+        const cancelButton = document.getElementById('cancel-btn');
+        const createButton = document.getElementById('create-btn');
+
+        let selectedTemplate = null;
+        let dropdownItems = [];
+        let currentIndex = -1;
+
+        // Focus on the note title input field on page load
+        window.addEventListener('load', () => {
+            noteTitleInput.focus();
+        });
+
+        // Update dropdown based on search
+        templateSearchInput.addEventListener('input', () => {
+            const searchQuery = templateSearchInput.value.toLowerCase();
+            const searchTerms = searchQuery.split(/\s+/); // Split search query into space-separated terms
+
+            const filteredTemplates = templates.filter(template => {
+                const noteType = template.noteType.toLowerCase();
+                const noteCategory = template.noteCategory.toLowerCase();
+
+                // Check if all search terms match either noteType or noteCategory
+                return searchTerms.every(term =>
+                    noteType.includes(term) || noteCategory.includes(term)
+                );
+            });
+
+            populateDropdown(filteredTemplates); // Populate dropdown with filtered templates
+            // Auto-select the template if only one item matches the search
+            if (dropdownItems.length === 1) {
+                dropdownItems[0].click();
+            }
+            currentIndex = -1; // Reset highlight index
+        });
+
+        // Handle keyboard navigation and actions in the search input
+        templateSearchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+
+                if (dropdownItems.length > 0) {
+                    // Show dropdown and select the first item if no item is currently highlighted
+                    if (currentIndex === -1) {
+                        currentIndex = 0;
+                        updateDropdownHighlight();
+                        templateDropdown.style.display = 'block';
+                    } else if (currentIndex < dropdownItems.length - 1) {
+                        // Navigate to the next dropdown item
+                        currentIndex++;
+                        updateDropdownHighlight();
+                    }
+                } else if (!templateSearchInput.value.trim() && templates.length > 0) {
+                    // If the field is empty, show all templates and highlight the first item
+                    populateDropdown(templates);
+                    currentIndex = 0;
+                    updateDropdownHighlight();
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+
+                // Navigate to the previous dropdown item
+                if (dropdownItems.length > 0 && currentIndex > 0) {
+                    currentIndex--;
+                    updateDropdownHighlight();
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+
+                // Auto-select the single result if there's exactly one result
+                if (dropdownItems.length === 1) {
+                    dropdownItems[0].click();
+                } else if (currentIndex >= 0 && currentIndex < dropdownItems.length) {
+                    // Otherwise, select the currently highlighted item
+                    dropdownItems[currentIndex].click();
+                }
+            } else if (e.key === 'Escape') {
+                // Hide dropdown on Escape key press
+                templateDropdown.style.display = 'none';
+                currentIndex = -1; // Reset the current index
+            }
+        });
+
+        // Add Cmd+Enter (or Ctrl+Enter) handler to trigger the Create Note button
+        document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                if (!createButton.disabled) {
+                    createButton.click();
+                }
+            }
+        });
+
+        // Utility function to populate the dropdown with filtered templates
+        function populateDropdown(filteredTemplates) {
+            templateDropdown.innerHTML = '';
+            dropdownItems = [];
+
+            if (filteredTemplates.length > 0) {
+                filteredTemplates.forEach(template => {
+                    const item = document.createElement('div');
+                    item.classList.add('dropdown-item');
+                    item.innerHTML = `
+                        <img src="${template.icon}" alt="${template.noteType}">
+                        <span class="note-type">${template.noteType}</span>
+                        <span class="note-category">${template.noteCategory}</span>
+                    `;
+                    item.addEventListener('click', () => selectTemplate(template));
+                    templateDropdown.appendChild(item);
+                    dropdownItems.push(item);
+                });
+
+                templateDropdown.style.display = 'block';
+            } else {
+                templateDropdown.style.display = 'none';
+            }
+        }
+
+        // Update dropdown highlight
+        function updateDropdownHighlight() {
+            dropdownItems.forEach((item, index) => {
+                item.classList.toggle('active', index === currentIndex);
+            });
+
+            // Scroll the dropdown to keep the highlighted item in view
+            if (currentIndex >= 0 && currentIndex < dropdownItems.length) {
+                const activeItem = dropdownItems[currentIndex];
+                activeItem.scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        // Select a template and update the UI
+        function selectTemplate(template) {
+            selectedTemplate = template;
+            templateIcon.src = template.icon;
+            templateSearchInput.value = template.noteType;
+            noteCategoryDisplay.textContent = `${template.noteCategory}`;
+            templateDropdown.style.display = 'none';
+            updateCreateButtonState();
+        }
+
+        // Update Create button state
+        function updateCreateButtonState() {
+            createButton.disabled = !noteTitleInput.value.trim() || !selectedTemplate;
+        }
+
+        // Cancel button behavior
+        cancelButton.addEventListener('click', () => {
+            selectedTemplate = null;
+            templateIcon.src = 'icons/no-template-selected.png';
+            templateSearchInput.value = '';
+            noteCategoryDisplay.textContent = '';
+            noteTitleInput.value = '';
+            templateDropdown.style.display = 'none';
+            updateCreateButtonState();
+        });
+
+        // Create button behavior
+        createButton.addEventListener('click', () => {
+            const noteTitle = noteTitleInput.value.trim();
+            if (selectedTemplate && noteTitle) {
+                const command = `notecreator --title "${noteTitle}" --template "${selectedTemplate.noteTitle}"`;
+                alert(`Executing: ${command}`);
+                console.log(command); // Mock execution
+                cancelButton.click(); // Reset form
+            }
+        });
+
+        // Enable/disable Create button on note title input
+        noteTitleInput.addEventListener('input', updateCreateButtonState);
+    </script>
+</body>
+
+</html>
